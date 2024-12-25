@@ -12,6 +12,8 @@ public class ChessGame {
     private boolean isWhiteTurn = true;
     private int selectedRow = -1, selectedCol = -1;
     private int flag = 0;
+    private boolean moveInProgress=false;
+    private int[] move = new int[2];
     private java.util.Timer gameTimer;
     //private Timer bTimer;
     private int whiteTimeLeft = 300;
@@ -179,18 +181,26 @@ public class ChessGame {
 
         if (selectedRow == -1 && selectedCol == -1) {
             if (isValidSelection(row, col)) {
+                if(moveInProgress){
+                    sq[move[0]][move[1]].setBackground(Color.WHITE);
+                }
                 selectedRow = row;
                 selectedCol = col;
                 sq[row][col].setBackground(Color.YELLOW);
+                moveInProgress=true;
+                move[0]=row;
+                move[1]=col;
             }
         } else {
             if (isValidMove(selectedRow, selectedCol, row, col)) {
                 movePiece(selectedRow, selectedCol, row, col);
+                moveInProgress=false;
                 isWhiteTurn = !isWhiteTurn;
 
                 
             } else {
                 flashInvalidMove(row, col);
+                moveInProgress=false;
             }
             resetSelection();
         }
