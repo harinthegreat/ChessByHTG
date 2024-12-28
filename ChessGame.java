@@ -15,17 +15,12 @@ public class ChessGame {
     private boolean moveInProgress=false;
     private int[] move = new int[2];
     private java.util.Timer gameTimer;
+    //private Timer bTimer;
     private int whiteTimeLeft = 300;
     private int blackTimeLeft = 300;
+    //private Timer currTimer;
     private JLabel wTimeLabel;
     private JLabel bTimeLabel;
-    private boolean[][] possibleMoves = new boolean[8][8];
-    private boolean whiteKingMoved=false;
-    private boolean blackKingMoved=false;
-    private boolean whiteLeftRookMoved=false;
-    private boolean whiteRightRookMoved=false;
-    private boolean blackLeftRookMoved=false;
-    private boolean blackRightRookMoved=false;
 
     private static final String WHITE_PAWN = "♙";
     private static final String BLACK_PAWN = "♟";
@@ -49,7 +44,6 @@ public class ChessGame {
         init();
 
         JPanel timePanel = new JPanel();
-
         timePanel.setLayout(new GridLayout(1,2));
         wTimeLabel = new JLabel("White : 05:00");
         wTimeLabel.setBackground(Color.WHITE);
@@ -88,14 +82,12 @@ public class ChessGame {
                         updateTimer(wTimeLabel,whiteTimeLeft);
                         if(whiteTimeLeft==0){
                             endGame("BLACK WINS BY TIMEOUT...");
-                            gameTimer.cancel();
                         }
                     }else{
                         blackTimeLeft--;
                         updateTimer(bTimeLabel,blackTimeLeft);
                         if(blackTimeLeft==0){
                             endGame("WHITE WINS BY TIMEOUT...");
-                            gameTimer.cancel();
                         }
                     }
                 });
@@ -195,8 +187,6 @@ public class ChessGame {
                 selectedRow = row;
                 selectedCol = col;
                 sq[row][col].setBackground(Color.YELLOW);
-                checkPossibleMoves(row, col);
-                colorPossibleMoves();
                 moveInProgress=true;
                 move[0]=row;
                 move[1]=col;
@@ -223,6 +213,7 @@ public class ChessGame {
 
     private boolean isValidMove(int fromRow, int fromCol, int toRow, int toCol) {
         String piece = boardState[fromRow][fromCol];
+
         boolean validPieceMove;
         switch (piece) {
             case "P": 
@@ -247,11 +238,9 @@ public class ChessGame {
             case "q": 
                 validPieceMove = isValidQueenMove(fromRow, fromCol, toRow, toCol);
                 break;
-            case "K":
-                validPieceMove = isValidKingMove(fromRow, fromCol, toRow, toCol) || isValidCastling(fromRow,fromCol,toRow,toCol,true); 
-                break;
+            case "K": 
             case "k": 
-                validPieceMove = isValidKingMove(fromRow, fromCol, toRow, toCol) || isValidCastling(fromRow,fromCol,toRow,toCol,false);
+                validPieceMove = isValidKingMove(fromRow, fromCol, toRow, toCol);
                 break;
             default:
                 validPieceMove = false;
@@ -273,47 +262,6 @@ public class ChessGame {
         return !stillInCheck;
     }
 
-    private boolean isValidCastling(int fromRow,int fromCol,int toRow,int toCol,boolean isWhiteTurn){
-        if(Math.abs(fromCol-toCol)!=2 || fromRow!=toRow){
-            return false;
-        }
-        if(isWhiteTurn){
-            if(whiteKingMoved || isInCheck(true)){
-                return false;
-            }
-            if(toCol == 6){
-                return !whiteRightRookMoved && boardState[7][5].isEmpty() && boardState[7][6].isEmpty() && !isUnderAttack(7, 5, false);
-
-            }else if(toCol == 2){
-                return !whiteLeftRookMoved && boardState[7][1].isEmpty() && boardState[7][2].isEmpty()&& boardState[7][3].isEmpty() && !isUnderAttack(7, 2, false) && !isUnderAttack(7, 3, false);
-            }
-        }else{
-            if(blackKingMoved || isInCheck(false)){
-                return false;
-            }
-            if(toCol == 6){
-                return !blackRightRookMoved && boardState[0][5].isEmpty() && boardState[0][6].isEmpty() && !isUnderAttack(0, 5, true);
-
-            }else if(toCol == 2){
-                return !blackLeftRookMoved && boardState[0][1].isEmpty() && boardState[0][2].isEmpty() && boardState[0][3].isEmpty() && !isUnderAttack(0, 2, true) && !isUnderAttack(0, 3, true);
-            }
-        }
-        return false;
-    }
-
-    private boolean isUnderAttack(int r,int c,boolean byWhite){
-        for(int i=0;i<BOARDSIZE;i++){
-            for(int j=0;j<BOARDSIZE;j++){
-                String a = boardState[r][c];
-                if(!a.isEmpty() && (Character.isUpperCase(a.charAt(0))==byWhite)){
-                    if(isValidMove(i, j, r, c)){
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
     private boolean isValidPawnMove(int fromRow, int fromCol, int toRow, int toCol, boolean isWhite) {
         int direction = isWhite ? -1 : 1;
@@ -323,6 +271,7 @@ public class ChessGame {
         if (Math.abs(fromCol - toCol) == 1 && toRow == fromRow + direction) {
     		return !boardState[toRow][toCol].isEmpty() && (isWhite != Character.isUpperCase(boardState[toRow][toCol].charAt(0)));
 		}
+
         return false;
     }
 
@@ -393,45 +342,17 @@ public class ChessGame {
 
         sq[fromRow][fromCol].setText("");
         sq[toRow][toCol].setText(getSymbol(piece));
-
-        if(piece.equals("K")){
-            whiteKingMoved = true;
-            if (Math.abs(toCol - fromCol) == 2) { 
-                if (toCol == 6) movePiece(7, 7, 7, 5); 
-                else if (toCol == 2) movePiece(7, 0, 7, 3); 
-            }
-        }else if(piece.equals("k")){
-            blackKingMoved = true;
-            if (Math.abs(toCol - fromCol) == 2) { 
-                if (toCol == 6) movePiece(0, 7, 0, 5); 
-                else if (toCol == 2) movePiece(0, 0, 0, 3); 
-            }
-        } else if (piece.equals("R")) {
-                if (fromRow == 7 && fromCol == 0) whiteLeftRookMoved = true;
-                if (fromRow == 7 && fromCol == 7) whiteRightRookMoved = true;
-        } else if (piece.equals("r")) {
-                if (fromRow == 0 && fromCol == 0) blackLeftRookMoved = true;
-                if (fromRow == 0 && fromCol == 7) blackRightRookMoved = true;
-        }   
-        
 		
 		if ((piece.equals("P") && toRow == 0) || (piece.equals("p") && toRow == 7)) {
         	pawnPromotion(toRow, toCol, piece.equals("P"));
     	}
 		
     	if (isCheckmate(!isWhiteTurn)) {
+            System.out.println("Checkmate detected! Ending the game...");
         	endGame((isWhiteTurn ? "White" : "Black") + " wins by checkmate!");
     	} else if (isStalemate(isWhiteTurn)) {
         	endGame("Stalemate! It's a draw.");
     	}
-        for (int i = 0; i < BOARDSIZE; i++) {
-            for (int j = 0; j < BOARDSIZE; j++) {
-                sq[i][j].setBackground((i+ j) % 2 == 0 ? Color.WHITE : Color.GRAY);
-                sq[i][j].setBorder(null);
-            }
-        }
-
-        highlightKingInCheck();
     }
 
     private void flashInvalidMove(int row, int col) {
@@ -475,13 +396,10 @@ public class ChessGame {
 		};
 		
 		JButton queen = new JButton(isWhite ? WHITE_QUEEN + " Queen" : BLACK_QUEEN + " Queen");
-        queen.setFocusPainted(false);
     	JButton rook = new JButton(isWhite ? WHITE_ROOK + " Rook" : BLACK_ROOK + " Rook");
-        rook.setFocusPainted(false);
     	JButton bishop = new JButton(isWhite ? WHITE_BISHOP + " Bishop" : BLACK_BISHOP + " Bishop");
-        bishop.setFocusPainted(false);
     	JButton knight = new JButton(isWhite ? WHITE_KNIGHT + " Knight" : BLACK_KNIGHT + " Knight");
-		knight.setFocusPainted(false);
+		  
 		queen.addActionListener(promoListener);
 		rook.addActionListener(promoListener);
 		bishop.addActionListener(promoListener);
@@ -495,24 +413,9 @@ public class ChessGame {
 		pd.setLocationRelativeTo(null); 
     	pd.setVisible(true);
 	}
-
-    private void highlightKingInCheck(){
-        for(int i=0;i<BOARDSIZE;i++){
-            for(int j=0;j<BOARDSIZE;j++){
-                String p = boardState[i][j];
-                if (p.equals("K") && isUnderAttack(i, j, true)) {
-                    sq[i][j].setBackground(Color.RED); 
-                } else if (p.equals("k") && isUnderAttack(i, j, false)) {
-                    sq[i][j].setBackground(Color.RED); 
-                } else if (p.equals("K") || p.equals("k")) {
-                    sq[i][j].setBackground((i + j) % 2 == 0 ? Color.WHITE : Color.GRAY);
-                }
-            }
-        }
-
-    }
 	
 	private boolean isInCheck(boolean isWhite) {
+		System.out.println("in check");
     	int kingRow = -1, kingCol = -1;
 
     	for (int row = 0; row < BOARDSIZE; row++) {
@@ -531,6 +434,7 @@ public class ChessGame {
             	String piece = boardState[row][col];
             	if (!piece.isEmpty() && (isWhite != Character.isUpperCase(piece.charAt(0)))) {
                 	if (isValidMove(row, col, kingRow, kingCol)) {
+						System.out.println("King is under attack by piece at " + row + "," + col);
                     	return true;
                 	}
             	}
@@ -541,8 +445,12 @@ public class ChessGame {
 
 	private boolean isCheckmate(boolean isWhite) {
 		if (!isInCheck(isWhite)) {
+        	System.out.println("King is not in check, so no checkmate.");
         	return false;
     	}
+
+    	System.out.println("King is in check. Checking for possible escape...");
+
     	for (int row = 0; row < BOARDSIZE; row++) {
         	for (int col = 0; col < BOARDSIZE; col++) {
             	String piece = boardState[row][col];
@@ -550,6 +458,8 @@ public class ChessGame {
                 	for (int targetRow = 0; targetRow < BOARDSIZE; targetRow++) {
                     	for (int targetCol = 0; targetCol < BOARDSIZE; targetCol++) {
                         	if (isValidMove(row, col, targetRow, targetCol)) {
+                            	System.out.println("Testing move: " + piece + " from " + row + "," + col + " to " + targetRow + "," + targetCol);
+
                             	String originalPiece = boardState[targetRow][targetCol];
                             	boardState[targetRow][targetCol] = piece;
                             	boardState[row][col] = "";
@@ -560,6 +470,7 @@ public class ChessGame {
                             	boardState[targetRow][targetCol] = originalPiece;
 
                             	if (!stillInCheck) {
+                                	System.out.println("Move escapes check: " + piece + " to " + targetRow + "," + targetCol);
                                 	return false;
                             	}
                         	}
@@ -568,10 +479,13 @@ public class ChessGame {
             	}
         	}
     	}
+
+    	System.out.println("No valid moves found. It's checkmate.");
     	return true;
 	}
 	
 	private boolean isStalemate(boolean isWhite) {
+		System.out.println("in stalemate");
     	if (isInCheck(isWhite)) return false;
 
     	for (int row = 0; row < BOARDSIZE; row++) {
@@ -601,36 +515,6 @@ public class ChessGame {
     	return true;
 	}
 	
-    private void checkPossibleMoves(int fromRow,int fromCol){
-        for(int i=0;i<8;i++){
-            for(int j=0;j<8;j++){
-                possibleMoves[i][j]=false;
-            }
-        }
-
-        for(int i=0;i<8;i++){
-            for(int j = 0; j< 8; j++){
-                if(isValidMove(fromRow, fromCol, i, j)){
-                    possibleMoves[i][j] = true;
-                }
-            }
-        }
-    }
-
-    private void colorPossibleMoves(){
-        for(int i=0;i<8;i++){
-            for(int j=0;j<8;j++){
-                if(possibleMoves[i][j]){
-                    //sq[i][j].setBackground(Color.CYAN);
-                    sq[i][j].setBackground(new Color(204, 255, 102));
-                    sq[i][j].setBorderPainted(true);
-                    sq[i][j].setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-                }else{
-                    sq[i][j].setBackground((i+ j) % 2 == 0 ? Color.WHITE : Color.GRAY);
-                }
-            }
-        }
-    }
 	
 	private void endGame(String message) {
     	JOptionPane.showMessageDialog(null, message, "Game Over", JOptionPane.INFORMATION_MESSAGE);
@@ -643,12 +527,6 @@ public class ChessGame {
         }
         selectedRow = -1;
         selectedCol = -1;
-
-        for (int i = 0; i < BOARDSIZE; i++) {
-            for (int j = 0; j < BOARDSIZE; j++) {
-                possibleMoves[i][j] = false;
-            }
-        }
     }
 
     private boolean isOpponentPiece(int fromRow, int fromCol, int toRow, int toCol) {
@@ -658,6 +536,7 @@ public class ChessGame {
         return Character.isUpperCase(boardState[fromRow][fromCol].charAt(0)) != Character.isUpperCase(boardState[toRow][toCol].charAt(0));
     }
     
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ChessGame::new);
     }
